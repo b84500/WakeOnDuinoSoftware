@@ -8,40 +8,85 @@ const byte mac[] = {0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED}; // tableau pour l'adres
 IPAddress ip(192, 168, 1, 69); //IP Arduino
 IPAddress server(192, 168, 1, 16); //IP Broker
 
-EthernetClient ethClient;
-PubSubClient client(server, 1883, callback, ethClient);
-
-const int PwrBtnP = 7;
-const int RstBtnP = 6;
-const int StateLedP = 8;
+#define PwrBtnP   7;
+#define RstBtnP   6;
+#define StateLedP 8;
 
 bool flag1=false;
 bool flag2=false;
 bool AddCookie=false;
 
+void callback(char* topic, byte* payload, unsigned int length) {
+  Serial.print("Message arrived [");
+  Serial.print(topic);
+  Serial.print("] ");
+  for (int i=0;i<length;i++) {
+    Serial.print((char)payload[i]);
+  }
+  Serial.println();
+}
+
+EthernetClient ethClient;
+PubSubClient client(ethClient);
+
+long lastReconnectAttempt = 0;
+
+void reconnect() {
+  Serial.print("Attempting MQTT connection...");
+  // Attempt to connect
+  if (client.connect("WakeOnDuino")) {
+    Serial.println("connected");
+    // Once connected, publish an announcement...
+    client.publish("WoDStatus","WakeOnDuino Connected");
+    // ... and resubscribe
+    client.subscribe("WoDCmd");
+    return client.connected();
+  }
+  else {
+    Serial.print("failed, rc=");
+    Serial.print(client.state());
+    Serial.println(" try again in 5 seconds");
+  }
+}
+
 void setup() {
   Serial.begin (9600); //initialisation de communication série
+  client.setServer(server, 1883);//Démarrage serveur mqtt sur port 1883
+  client.setCallback(callback);//"Répéteur" de message dans console
   Ethernet.begin (mac, ip); //initialisation de la communication Ethernet
 
   Serial.println("WakeOnDuino Version 2.0 Beta WVersion");
-  Serial.println("\nWait for Broker connection");
   
-  if (client.connect("arduinoClient", "testuser", "testpass")) {
-    client.publish("outTopic","hello world");
-    client.subscribe("inTopic");
-  }
-  
-  Serial.print("\nLe serveur est opérationnel sur l'adresse : ");
-  Serial.println(Ethernet.localIP()); //on affiche l'adresse IP de la connexion
-  serveur.begin(); // démarre l'écoute
-
   pinMode(PwrBtnP,OUTPUT);
   pinMode(RstBtnP,OUTPUT);
   pinMode(StateLedP,INPUT);
 
+  delay(1000);
+
+  lastReconnectAttempt = 0;
+
+  Serial.println("\nWait for MQTT Broker connection");
+
 }
 
-void loop() {
+void loop(){
+  if(!client.connected()){
+    long now = millis();
+    if (now - lastReconnectAttempt > 5000){
+      lastReconnectAttempt = now;
+      //Attempt to reconnect
+      if(reconnect()){
+        lastReconnectAttempt = 0;
+      }
+      else{
+        //Client connected
+        client.loop();
+      }
+    }
+  }
+}
+
+void oldloop() {
   EthernetClient client = serveur.available(); //on écoute le port
   if (client) { //si client connecté
     Serial.println("Client en ligne"); //on le dit...
