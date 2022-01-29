@@ -1,4 +1,4 @@
-//WakeOnDuino Version 2 Beta WorkVersion --- Ezio Cangialosi 09/07/2020 sur une base d'OpenClassroom
+//WakeOnDuino Version 2 Beta --- Ezio Cangialosi 29/01/2022
 
 #include <SPI.h> //bibliothèqe pour SPI
 #include <Ethernet.h> //bibliothèque pour Ethernet
@@ -13,16 +13,16 @@ IPAddress server(192, 168, 1, 16); //IP Broker
 #define StateLedP 8
 #define OUTTOPIC "WoDStatus"
 
-void callback(char* topic, byte* payload, unsigned int length) {
+void callback(char* topic, byte* payload, unsigned int length) {//Est appelée automatiquement quand un nouveau message est détecté sur un topic
   String msg="";
   Serial.print("Message arrived [");
   Serial.print(topic);
   Serial.print("] ");
   for (int i=0;i<length;i++) {
     Serial.print((char)payload[i]);
-    msg +=(char)payload[i];
+    msg +=(char)payload[i];//On rentre le message dans une string pour le traiter en suite
   }
-  master(msg);
+  master(msg);//Fonction de traitement principale
   Serial.println();
 }
 
@@ -33,12 +33,12 @@ long lastReconnectAttempt = 0;
 
 boolean reconnect() {
   Serial.print("Attempting MQTT connection...");
-  // Attempt to connect
+  // On essaye de se connecter en se nommant WakeOnDuino
   if (client.connect("WakeOnDuino")) {
     Serial.println("connected");
-    // Once connected, publish an announcement...
-    client.publish(OUTTOPIC,"WakeOnDuino V2BetaWVer Connected");
-    // ... and resubscribe
+    //Une fois connectée on publie un msg sur le topic de status
+    client.publish(OUTTOPIC,"WakeOnDuino V2Beta Connected");
+    //Et on écoute sur le topic de commande
     client.subscribe("WoDCmd");
     return client.connected();
   }
@@ -52,12 +52,11 @@ boolean reconnect() {
 void setup() {
   Serial.begin (9600); //initialisation de communication série
   client.setServer(server, 1883);//Démarrage serveur mqtt sur port 1883
-  client.setCallback(callback);//"Répéteur" de message dans console
+  client.setCallback(callback);//Ce qui permet de récupérer les messages entrants
   Ethernet.begin (mac, ip); //initialisation de la communication Ethernet
 
-  Serial.println("WakeOnDuino Version 2.0 Beta WVersion");
-  Serial.println("Caution, WorkVersion, HIGH action on pin DEACTIVATED !");
-  
+  Serial.println("WakeOnDuino Version 2.0 Beta");
+    
   pinMode(PwrBtnP,OUTPUT);
   pinMode(RstBtnP,OUTPUT);
   pinMode(StateLedP,INPUT);
@@ -70,9 +69,9 @@ void setup() {
 }
 
 void loop(){
-  if (!client.connected()) {
+  if (!client.connected()) {//Si on n'est pas connecté au Broker
     long now = millis();
-    if (now - lastReconnectAttempt > 5000) {
+    if (now - lastReconnectAttempt > 5000) {//Un essai toutes les 5secs
       lastReconnectAttempt = now;
       // Attempt to reconnect
       if (reconnect()) {
@@ -87,15 +86,13 @@ void loop(){
 }
 
 void master(String message){
-  unsigned int mode=checkString(message);
-  if(mode != 0){
+  unsigned int mode=checkString(message);//Traitement de la string et renvoie d'un code
+  if(mode != 0){//Si il n'y a pas eu d'erreur dans la comprehension de la string
     selectAction(mode);
   }
 }
 
 unsigned int checkString(String message){
- Serial.println("msg :");
- Serial.print(message);
  if(message=="PiO"){
     return 1;
  }
@@ -128,16 +125,16 @@ void selectAction(unsigned int mode){
   }
 }
 
-void shortPress(bool pinChoice){
+void shortPress(bool pinChoice){//PinChoice pour sélectionner le bon pin (7-8 --> 0-1)
   if(pinChoice){
-    //digitalWrite(RstBtnP,HIGH);
+    digitalWrite(RstBtnP,HIGH);
     Serial.println("Reset du PC (Pin8-HIGH)");
     delay(100);
     digitalWrite(RstBtnP,LOW);
     client.publish(OUTTOPIC,"Reset order Received, Executed.");
   }
   else{
-    //digitalWrite(PwrBtnP,HIGH);
+    digitalWrite(PwrBtnP,HIGH);
     delay(100);
     Serial.println("Allumage du PC (Pin7-HIGH)");
     digitalWrite(PwrBtnP,LOW);
@@ -146,7 +143,7 @@ void shortPress(bool pinChoice){
 }
 
 void forcedShutdown(){
-  //digitalWrite(PwrBtnP,HIGH);
+  digitalWrite(PwrBtnP,HIGH);
   Serial.println("Coupure du PC (Pin7-HIGH)");
   delay(5000);
   digitalWrite(PwrBtnP,LOW);
