@@ -1,4 +1,4 @@
-//WakeOnDuino Version 2.1 Beta WorkVersion --- Ezio Cangialosi 27/02/2022
+//WakeOnDuino Version 2.1 Beta --- Ezio Cangialosi 27/02/2022
 
 #include <SPI.h> //bibliothèqe pour SPI
 #include <Ethernet.h> //bibliothèque pour Ethernet
@@ -40,7 +40,7 @@ boolean reconnect() {
   if (client.connect("WakeOnDuino")) {
     Serial.println("connected");
     //Une fois connectée on publie un msg sur le topic de status
-    client.publish(OUTTOPIC,"WakeOnDuino V2.1BetaWVer Connected");
+    client.publish(OUTTOPIC,"WakeOnDuino V2.1Beta Connected");
     //Et on écoute sur le topic de commande
     client.subscribe("WoDCmd");
     return client.connected();
@@ -58,8 +58,7 @@ void setup() {
   client.setCallback(callback);//Ce qui permet de récupérer les messages entrants
   Ethernet.begin (mac, ip); //initialisation de la communication Ethernet
 
-  Serial.println("WakeOnDuino Version 2.1 Beta WVersion");
-  Serial.println("Caution, WorkVersion, HIGH action on pin DEACTIVATED !");
+  Serial.println("WakeOnDuino Version 2.1 Beta");
   
   pinMode(PwrBtnP,OUTPUT);
   pinMode(RstBtnP,OUTPUT);
@@ -147,14 +146,14 @@ void selectAction(unsigned int mode){
 
 void shortPress(bool pinChoice){//PinChoice pour sélectionner le bon pin (7-8 --> 0-1)
   if(pinChoice){
-    //digitalWrite(RstBtnP,HIGH);
+    digitalWrite(RstBtnP,HIGH);
     Serial.println("Reset du PC (Pin8-HIGH)");
     delay(100);
     digitalWrite(RstBtnP,LOW);
     client.publish(OUTTOPIC,"Reset order Received, Executed.");
   }
   else{
-    //digitalWrite(PwrBtnP,HIGH);
+    digitalWrite(PwrBtnP,HIGH);
     delay(100);
     Serial.println("Allumage du PC (Pin7-HIGH)");
     digitalWrite(PwrBtnP,LOW);
@@ -163,7 +162,7 @@ void shortPress(bool pinChoice){//PinChoice pour sélectionner le bon pin (7-8 -
 }
 
 void forcedShutdown(){
-  //digitalWrite(PwrBtnP,HIGH);
+  digitalWrite(PwrBtnP,HIGH);
   Serial.println("Coupure du PC (Pin7-HIGH)");
   delay(5000);
   digitalWrite(PwrBtnP,LOW);
