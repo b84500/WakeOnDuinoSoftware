@@ -132,6 +132,9 @@ void loop(){
     delay(5000);
     Serial.println("Rebooting...");
     client.publish(OUTTOPIC,"Rebooting...");
+    delay(100);
+    client.disconnect();
+    delay(100);
     resetFunc();
   }
 }
@@ -236,6 +239,8 @@ void selfReboot(){
   delay(5000);
   Serial.println("Rebooting...");
   client.publish(OUTTOPIC,"Rebooting, See you soon world !");
+  delay(100);
+  client.disconnect();
   delay(100);
   resetFunc();
 }
