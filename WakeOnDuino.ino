@@ -1,27 +1,57 @@
-//WakeOnDuino Version 2.2.1 WORKVERSION--- Ezio Cangialosi 15/09/2022
+//WakeOnDuino Version 3.0 Alpha--- Ezio Cangialosi 11/10/2022
+
+#define VER_STR   "V3.0 Alpha" //Str for communicate version
 
 /*-------------------------------------------------------------------
-             CAUTION WORKVERSION, DO NOT USE IN PROD
+          TO ENABLE WORKVERSION, CAUTION DO NOT USE IN PROD
 -------------------------------------------------------------------*/
+//#define WORK_VERSION
 
-
-
-#include <SPI.h> //bibliothèqe pour SPI
-#include <Ethernet.h> //bibliothèque pour Ethernet
+#include <ESP8266WiFi.h>
 #include <PubSubClient.h>
 
-const byte mac[] = {0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED}; // tableau pour l'adresse MAC de la carte
-IPAddress ip(192, 168, 1, 69); //IP Arduino
-IPAddress server(192, 168, 1, 16); //IP Broker
+const char* ssid = "YOUR SSID";
+const char* password = "YOUR WIFI PASSWORD";
+const char* mqtt_server = "YOUR BROKER";
 
 #define PwrBtnP   7
 #define RstBtnP   6
 #define StateLedP 8
 #define OUTTOPIC  "WoDStatus"
 #define ERRORSTR  "Error when trying to understand message or no corresponding action."
+
 #define AUTORSTTIME 86400000
 
+WiFiClient espClient;
+PubSubClient client(espClient);
+
+long lastReconnectAttempt = 0;
+
 void(* resetFunc) (void) = 0;
+
+void setup_wifi() {
+
+  delay(10);
+  // We start by connecting to a WiFi network
+  Serial.println();
+  Serial.print("Connecting to ");
+  Serial.println(ssid);
+
+  WiFi.mode(WIFI_STA);
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  randomSeed(micros());
+
+  Serial.println("");
+  Serial.println("WiFi connected");
+  Serial.println("IP address: ");
+  Serial.println(WiFi.localIP());
+}
 
 void callback(char* topic, byte* payload, unsigned int length) {//Est appelée automatiquement quand un nouveau message est détecté sur un topic
   String msg="";
@@ -36,18 +66,17 @@ void callback(char* topic, byte* payload, unsigned int length) {//Est appelée a
   Serial.println();
 }
 
-EthernetClient ethClient;
-PubSubClient client(ethClient);
-
-long lastReconnectAttempt = 0;
-
 boolean reconnect() {
   Serial.print("Attempting MQTT connection...");
   // On essaye de se connecter en se nommant WakeOnDuino
   if (client.connect("WakeOnDuino")) {
     Serial.println("connected");
     //Une fois connectée on publie un msg sur le topic de status
-    client.publish(OUTTOPIC,"WakeOnDuino V2.2.1 WVersion Connected");
+    client.publish(OUTTOPIC,"WakeOnDuino Connected");
+    client.publish(OUTTOPIC,VER_STR);
+    #ifdef WORK_VERSION
+    client.publish(OUTTOPIC,"Caution WorkVersion");
+    #endif
     //Et on écoute sur le topic de commande
     client.subscribe("WoDCmd");
     return client.connected();
@@ -65,8 +94,11 @@ void setup() {
   client.setCallback(callback);//Ce qui permet de récupérer les messages entrants
   Ethernet.begin (mac, ip); //initialisation de la communication Ethernet
 
-  Serial.println("WakeOnDuino Version 2.2.1 WVersion");
+  Serial.println("--- WakeOnDuino ---");
+  Serial.println(VER_STR);
+  #ifdef WORK_VERSION
   Serial.println("Caution, WorkVersion, HIGH action on pin DEACTIVATED !");
+  #endif
   
   pinMode(PwrBtnP,OUTPUT);
   pinMode(RstBtnP,OUTPUT);
@@ -110,7 +142,6 @@ void master(String message){
     selectAction(mode);
   }
   else{
-    //byte errorStr[200]=+message;
     client.publish(OUTTOPIC,ERRORSTR);
   }
 }
@@ -162,14 +193,18 @@ void selectAction(unsigned int mode){
 
 void shortPress(bool pinChoice){//PinChoice pour sélectionner le bon pin (7-8 --> 0-1)
   if(pinChoice){
-    //digitalWrite(RstBtnP,HIGH);
+    #ifdef WORK_VERSION
+    digitalWrite(RstBtnP,HIGH);
+    #endif
     Serial.println("Reset du PC (Pin8-HIGH)");
     delay(100);
     digitalWrite(RstBtnP,LOW);
     client.publish(OUTTOPIC,"Reset order Received, Executed.");
   }
   else{
-    //digitalWrite(PwrBtnP,HIGH);
+    #ifdef WORK_VERSION
+    digitalWrite(PwrBtnP,HIGH);
+    #endif
     delay(100);
     Serial.println("Allumage du PC (Pin7-HIGH)");
     digitalWrite(PwrBtnP,LOW);
@@ -178,7 +213,9 @@ void shortPress(bool pinChoice){//PinChoice pour sélectionner le bon pin (7-8 -
 }
 
 void forcedShutdown(){
-  //digitalWrite(PwrBtnP,HIGH);
+  #ifdef WORK_VERSION
+  digitalWrite(PwrBtnP,HIGH);
+  #endif
   Serial.println("Coupure du PC (Pin7-HIGH)");
   delay(5000);
   digitalWrite(PwrBtnP,LOW);
