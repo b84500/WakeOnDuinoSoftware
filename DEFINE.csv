@@ -1,0 +1,5 @@
+PwrBtnP,7,
+RstBtnP,6,
+StateLedP,8,
+OUTTOPIC,WoDStatus,
+AUTORSTTIME,86400000,

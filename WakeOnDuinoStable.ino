@@ -1,4 +1,4 @@
-//WakeOnDuino Version 2.2.1 --- Ezio Cangialosi 02/09/2022
+//WakeOnDuino Version 2.2.1 --- Ezio Cangialosi 17/10/2022
 
 #include <SPI.h> //bibliothèqe pour SPI
 #include <Ethernet.h> //bibliothèque pour Ethernet
@@ -12,8 +12,9 @@ IPAddress server(192, 168, 1, 16); //IP Broker
 #define RstBtnP   6
 #define StateLedP 8
 #define OUTTOPIC  "WoDStatus"
-#define ERRORSTR  "Error when trying to understand message or no corresponding action."
 #define AUTORSTTIME 86400000
+#define ERRORSTR  "Error when trying to understand message or no corresponding action."
+#define MQTT_KEEPALIVE 15
 
 void(* resetFunc) (void) = 0;
 
@@ -50,6 +51,7 @@ boolean reconnect() {
     Serial.print("failed, rc=");
     Serial.print(client.state());
     Serial.println(" try again in 5 seconds");
+    return false;
   }
 }
 
@@ -57,6 +59,7 @@ void setup() {
   Serial.begin (9600); //initialisation de communication série
   client.setServer(server, 1883);//Démarrage serveur mqtt sur port 1883
   client.setCallback(callback);//Ce qui permet de récupérer les messages entrants
+  client.setKeepAlive(MQTT_KEEPALIVE);
   Ethernet.begin (mac, ip); //initialisation de la communication Ethernet
 
   Serial.println("WakeOnDuino Version 2.2.1");
@@ -93,6 +96,8 @@ void loop(){
     delay(5000);
     Serial.println("Rebooting...");
     client.publish(OUTTOPIC,"Rebooting...");
+    client.disconnect();
+    delay(100);
     resetFunc();
   }
 }
@@ -192,6 +197,7 @@ void selfReboot(){
   delay(5000);
   Serial.println("Rebooting...");
   client.publish(OUTTOPIC,"Rebooting, See you soon world !");
+  client.disconnect();
   delay(100);
   resetFunc();
 }
