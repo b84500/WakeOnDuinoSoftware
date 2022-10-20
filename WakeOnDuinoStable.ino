@@ -1,13 +1,5 @@
 //WakeOnDuino Version 2.2.1 --- Ezio Cangialosi 17/10/2022
 
-#include <SPI.h> //bibliothèqe pour SPI
-#include <Ethernet.h> //bibliothèque pour Ethernet
-#include <PubSubClient.h>
-
-const byte mac[] = {0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED}; // tableau pour l'adresse MAC de la carte
-IPAddress ip(192, 168, 1, 69); //IP Arduino
-IPAddress server(192, 168, 1, 16); //IP Broker
-
 #define PwrBtnP   7
 #define RstBtnP   6
 #define StateLedP 8
@@ -15,6 +7,14 @@ IPAddress server(192, 168, 1, 16); //IP Broker
 #define AUTORSTTIME 86400000
 #define ERRORSTR  "Error when trying to understand message or no corresponding action."
 #define MQTT_KEEPALIVE 15
+
+#include <SPI.h> //bibliothèqe pour SPI
+#include <Ethernet.h> //bibliothèque pour Ethernet
+#include <PubSubClient.h>
+
+const byte mac[] = {0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED}; // tableau pour l'adresse MAC de la carte
+IPAddress ip(192, 168, 1, 69); //IP Arduino
+IPAddress server(192, 168, 1, 16); //IP Broker
 
 void(* resetFunc) (void) = 0;
 
