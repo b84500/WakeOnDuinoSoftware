@@ -1,5 +1,15 @@
 //WakeOnDuino Version 3.0 Alpha--- Ezio Cangialosi 11/10/2022
 
+#define WIFISSID    "YOUR SSID"
+#define PASSWORD    "YOUR WIFI PASSWORD"
+#define MQTT_SERVER "YOUR BROKER"
+#define PwrBtnP     7
+#define RstBtnP     6
+#define OUTTOPIC    "WoDStatus"
+#define INTOPIC     "WoDCmd"
+#define ERRORSTR    "Error when trying to understand message or no corresponding action."
+#define AUTORSTTIME 86400000
+
 #define VER_STR   "V3.0 Alpha" //Str for communicate version
 
 /*-------------------------------------------------------------------
@@ -9,18 +19,6 @@
 
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
-
-const char* ssid = "YOUR SSID";
-const char* password = "YOUR WIFI PASSWORD";
-const char* mqtt_server = "YOUR BROKER";
-
-#define PwrBtnP   7
-#define RstBtnP   6
-#define StateLedP 8
-#define OUTTOPIC  "WoDStatus"
-#define ERRORSTR  "Error when trying to understand message or no corresponding action."
-
-#define AUTORSTTIME 86400000
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -78,7 +76,7 @@ boolean reconnect() {
     client.publish(OUTTOPIC,"Caution WorkVersion");
     #endif
     //Et on écoute sur le topic de commande
-    client.subscribe("WoDCmd");
+    client.subscribe(INTOPIC);
     return client.connected();
   }
   else {
@@ -102,7 +100,6 @@ void setup() {
   
   pinMode(PwrBtnP,OUTPUT);
   pinMode(RstBtnP,OUTPUT);
-  pinMode(StateLedP,INPUT);
 
   delay(1000);
 
